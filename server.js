@@ -15,6 +15,9 @@ app.use(helmet());
 // CORS configuration
 app.use(cors());
 
+// Disable JSON pretty-printing for compact output
+app.set('json spaces', 0);
+
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

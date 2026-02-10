@@ -18,7 +18,7 @@ async function getAIResponse(question) {
 
     try {
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
             {
                 contents: [{
                     parts: [{
@@ -27,14 +27,14 @@ async function getAIResponse(question) {
                 }],
                 generationConfig: {
                     temperature: 0.1,
-                    maxOutputTokens: 10,
+                    maxOutputTokens: 50,
                 }
             },
             {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                timeout: 10000
+                timeout: 20000
             }
         );
 
@@ -49,12 +49,25 @@ async function getAIResponse(question) {
 
         throw new Error('Invalid response from AI service');
     } catch (error) {
+        // Log full error for debugging
+        console.error('AI Service Error Details:', {
+            message: error.message,
+            code: error.code,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data
+        });
+
         if (error.response?.status === 429) {
             throw new Error('AI service rate limit exceeded');
         } else if (error.response?.status === 401 || error.response?.status === 403) {
             throw new Error('Invalid AI API key');
-        } else if (error.code === 'ECONNABORTED') {
+        } else if (error.response?.status === 400) {
+            throw new Error(`AI service bad request: ${error.response?.data?.error?.message || 'Invalid request'}`);
+        } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
             throw new Error('AI service timeout');
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+            throw new Error('AI service unreachable');
         }
 
         throw new Error(`AI service error: ${error.message}`);
